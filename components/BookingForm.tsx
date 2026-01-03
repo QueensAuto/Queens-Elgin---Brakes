@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { translations } from '../constants';
+import { translations, WEBHOOK_URL } from '../constants';
 import { LangType } from '../types';
 
 interface BookingFormProps {
@@ -173,7 +173,8 @@ const BookingForm: React.FC<BookingFormProps> = ({ t, lang }) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const formattedPhone = `+1${formData.phone.replace(/\D/g, '')}`;
+    const cleanedPhone = formData.phone.replace(/\D/g, '');
+    const formattedPhone = `+1${cleanedPhone.startsWith('1') && cleanedPhone.length === 11 ? cleanedPhone.substring(1) : cleanedPhone}`;
 
     // Collect UTM params
     const params = new URLSearchParams(window.location.search);
@@ -205,41 +206,37 @@ const BookingForm: React.FC<BookingFormProps> = ({ t, lang }) => {
       (window as any).dataLayer.push(gtmData);
     }
 
-    // N8N Payload
+    // N8N Payload mapped to match your n8n split module keys
     const payload = {
-      "First Name": formData.firstName,
-      "Last Name": formData.lastName,
-      "Full Name": `${formData.firstName} ${formData.lastName}`,
-      "Phone": formattedPhone,
-      "Email": formData.email,
-      "Car Make": formData.carMake,
-      "Car Model": formData.carModel,
-      "Car Year": formData.carYear,
-      "Vehicle": `${formData.carYear} ${formData.carMake} ${formData.carModel}`,
-      "Appointment Date": formData.date,
-      "Appointment Time": formData.time,
-      "UTM Source": getParam('utm_source') || null,
-      "UTM Medium": getParam('utm_medium') || null,
-      "UTM Campaign": getParam('utm_campaign') || null,
-      "UTM Term": getParam('utm_term') || null,
-      "UTM Content": getParam('utm_content') || null,
-      "GCLID": getParam('gclid') || null,
-      "FBCLID": getParam('fbclid') || null,
-      "MSCLKID": getParam('msclkid') || "",
-      "GA Client ID": (window as any).ga?.getAll?.[0]?.get('clientId') || "", // Try to get GA Client ID
-      "FBC": getParam('fbc') || null,
-      "Referrer": document.referrer || null,
-      "Page Variant": "brakes_001_react",
-      "User Language": lang,
-      "Event ID": eventId,
-      "Lead Type": "generate_lead"
+      "first_name": formData.firstName,
+      "last_name": formData.lastName,
+      "phone": formattedPhone,
+      "email": formData.email,
+      "carMake": formData.carMake,
+      "carModel": formData.carModel,
+      "carYear": formData.carYear,
+      "date": formData.date,
+      "time": formData.time,
+      "utm_source": getParam('utm_source') || null,
+      "utm_medium": getParam('utm_medium') || null,
+      "utm_campaign": getParam('utm_campaign') || null,
+      "utm_term": getParam('utm_term') || null,
+      "utm_content": getParam('utm_content') || null,
+      "gclid": getParam('gclid') || null,
+      "fbclid": getParam('fbclid') || null,
+      "msclkid": getParam('msclkid') || "",
+      "ga_client_id": (window as any).ga?.getAll?.[0]?.get('clientId') || "",
+      "fbc": getParam('fbc') || null,
+      "referrer": document.referrer || null,
+      "pageVariant": "brakes_001_react",
+      "userLanguage": lang,
+      "event_id": eventId,
+      "lead_type": "generate_lead",
+      "symptom": formData.symptom || "Brake Service Request"
     };
 
-    // Use the TEST webhook URL for now
-    const TEST_WEBHOOK_URL = "https://n8n.queensautoservices.com/webhook-test/5be99bf2-b19b-49f7-82b3-431fb1748b27";
-
     try {
-      const response = await fetch(TEST_WEBHOOK_URL, {
+      const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
