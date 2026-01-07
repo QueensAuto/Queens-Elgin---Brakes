@@ -174,7 +174,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ t, lang }) => {
     setIsSubmitting(true);
 
     const cleanedPhone = formData.phone.replace(/\D/g, '');
-    const formattedPhone = `+1${cleanedPhone.startsWith('1') && cleanedPhone.length === 11 ? cleanedPhone.substring(1) : cleanedPhone}`;
+    const formattedPhone = `+1${cleanedPhone.slice(-10)}`;
 
     // Collect UTM params
     const params = new URLSearchParams(window.location.search);
@@ -186,14 +186,15 @@ const BookingForm: React.FC<BookingFormProps> = ({ t, lang }) => {
     // GTM Data Layer Push
     const gtmData = {
       event: 'generate_lead',
+      generate_lead: true,
       event_id: eventId,
       user_data: {
-        email: formData.email,
-        phone_number: formattedPhone,
         address: {
-          first_name: formData.firstName,
           last_name: formData.lastName,
-        }
+          first_name: formData.firstName,
+        },
+        email: formData.email,
+        phone_number: formattedPhone
       },
       lead_type: 'generate_lead',
       page_variant: 'brakes_001_react',
